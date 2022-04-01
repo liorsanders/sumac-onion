@@ -1,0 +1,7 @@
+Menu:
+
+the menu will first ask the user for a website: 
+for example: https://google.com 
+
+program will use the machines connected to the network to get the message securely
+
