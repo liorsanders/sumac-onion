@@ -1,44 +1,12 @@
 #include "bigint.hpp"
 
 #include <iostream> 
-
+#include <numeric>
+#include <boost/multiprecision/cpp_int.hpp>
+#include <bits/stdc++.h>
 
 int main() {
-	std::string input;
-	bigint* first = nullptr;
-	bigint* second = nullptr;
-	bigint* res = nullptr;
-	while(true) {
-		std::cout << "enter number 1: ";
-		std::getline(std::cin, input);
-		if(input[input.size()-1] == '\n') {
-			input.erase(input.size()-1);
-		}
-		first = new bigint(input);
-		std::cout << "enter number 2: ";
-		std::getline(std::cin, input);
-		if(input[input.size()-1] == '\n') {
-			input.erase(input.size()-1);
-		}
-		second = new bigint(input);
-		std::cout << "enter 1 to add, 2 to subtract: ";
-		std::getline(std::cin, input);
-		if(input[0] == '1') {
-			res = bigint::add(first, second);
-		}
-		else if(input[0] == '2') {
-			res = bigint::sub(first, second);
-		}
-		std::cout << "res: " << res->toString() << std::endl;
-		if(res) {
-			delete res;
-		}
-		if(first) {
-			delete first;
-		}
-		if(second) {
-			delete second;
-		}
-	}
+	boost::multiprecision::cpp_int num("34534857928475927498572984759827948572398475");
+	std::cout << num % boost::multiprecision::cpp_int("2342342342342342") << std::endl;
 	return 0;
 }

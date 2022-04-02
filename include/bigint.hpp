@@ -2,6 +2,9 @@
 
 #include <string>
 #include <algorithm>
+#include <iostream>
+#include <vector>
+#include <numeric>
 
 class bigint {
 public:
@@ -10,6 +13,12 @@ public:
 		_isPositive = str[0] != '-';
 		if(str[0] == '-' || str[0] == '+') {
 			_data.erase(0, 1);
+		}
+		while(_data[0] == '0') {
+			_data.erase(0, 1);
+		}
+		if(_data.size() == 0) {
+			_data = "0";
 		}
 	}
 	bigint() {
@@ -26,6 +35,78 @@ public:
 		return _isPositive;
 	}
 	// a - b
+	// static bigint* multiply(const bigint* number, const bigint* multiplyBy) {
+	// 	bigint* mult = new bigint(multiplyBy->toString());
+	// 	bigint* res = new bigint(number->toString());
+	// 	if(multiplyBy->isPositive()) {
+	// 		while(mult->toString()[0] != '0' ) {
+	// 			bigint* temp = new bigint(res->toString());
+	// 			delete res;
+	// 			res = add(temp, number);
+	// 			delete temp;
+				
+	// 		}
+		
+	// 	}
+	// }
+	friend std::ostream& operator<<(std::ostream& os, const bigint& number) {
+		os << number.toString();
+		return os;
+	}
+	bigint operator+(const bigint& other) {
+		bigint res;
+		res.add(*this);
+		res.add(other);
+		return res;
+	}
+	bigint operator-(const bigint& other) {
+		bigint res;
+		res.add(*this);
+		res.sub(other);
+		return res;
+	}
+	bigint operator*(const bigint& other) {
+		bigint res;
+		res.add(*this);
+		res.mul(other);
+		return res;
+	}
+	void mul(const bigint& other) {
+		bigint temp = other;
+		bigint initial = *this;
+		if(other._data == "0") {
+			_data = "0";
+			_isPositive = true;
+		}
+		else if(other.isPositive()) {
+			_data = bigint::multiply(_data, other._data);
+		}
+		else {
+			_isPositive = !_isPositive;
+			temp._isPositive = true;
+			this->mul(temp);
+		}
+	}
+	void div(const bigint& other) {
+		__uint128_t num = bigint::bigint_to_uint128(other);
+		bigint* a = get_uint128(num);
+		std::cout << *a << std::endl;
+		delete a;
+		_data = bigint::longDivision(_data, num);
+	}
+	void sub(const bigint& other) {
+		bigint* temp = bigint::sub(this, &other);
+		this->_data = temp->_data;
+		this->_isPositive = temp->_isPositive;
+		delete temp;
+	}
+	void add(const bigint& other) {
+		bigint* temp = bigint::add(this, &other);
+		this->_data = temp->_data;
+		this->_isPositive = temp->_isPositive;
+		delete temp;
+	}
+
 	static bigint* sub(const bigint* a, const bigint* b) {
 		std::string str1 = a->toString();
 		std::string str2 = b->toString();
@@ -73,7 +154,7 @@ public:
 				res.insert(0, 1, (char)(sum % 10 + '0'));
 				carry = sum / 10;
 			}
-
+			res.insert(0, 1, (char)(carry + '0'));
 			return new bigint(res);
 		}
 		else if(a->isPositive() && !b->isPositive()) {
@@ -91,7 +172,137 @@ public:
 		}
 		
 	}
+	
 private: 
+	static __uint128_t bigint_to_uint128(const bigint& number) {
+		__uint128_t res = 0;
+		std::string num = number._data;
+		for(int i=0;i<num.size();i++) {
+			res = res * 10 + num[i] - '0';
+		}
+		return res;
+	}
+	bigint* get_uint128(__uint128_t n) {
+		if (n == 0)  return new bigint();
+
+		char str[40] = {0}; // log10(1 << 128) + ''
+		char *s = str + sizeof(str) - 1; // start at the end
+		while (n != 0) {
+			if (s == str) return new bigint("-1"); // never happens
+
+			*--s = "0123456789"[n % 10]; // save last digit
+			n /= 10;                     // drop it
+		}
+		char* res = new char[40];
+		sprintf(res, "%s", s);
+		std::string result = res;
+		delete[] res;
+		return new bigint(result);
+	}
+	std::string longDivision(std::string number,  __uint128_t divisor)
+	{
+		// As result can be very large store it in string
+		std::string ans;
+	
+		// Find prefix of number that is larger
+		// than divisor.
+		int idx = 0;
+		int temp = number[idx] - '0';
+		while (temp < divisor)
+			temp = temp * 10 + (number[++idx] - '0');
+		std::cout << "temp: " << temp << std::endl;
+		// Repeatedly divide divisor with temp. After
+		// every division, update temp to include one
+		// more digit.
+		while (number.size() > idx) {
+			// Store result in answer i.e. temp / divisor
+			ans += (temp / divisor) + '0';
+			std::cout << ans << std::endl;
+			// Take next digit of number
+			temp = (temp % divisor) * 10 + number[++idx] - '0';
+		}
+	
+		// If divisor is greater than number
+		if (ans.length() == 0)
+			return "0";
+	
+		// else return ans
+		return ans;
+	}
+
+	static std::string multiply(std::string num1, std::string num2)
+	{
+		int len1 = num1.size();
+		int len2 = num2.size();
+		if (len1 == 0 || len2 == 0)
+		return "0";
+	
+		// will keep the result number in vector
+		// in reverse order
+		std::vector<int> result(len1 + len2, 0);
+	
+		// Below two indexes are used to find positions
+		// in result.
+		int i_n1 = 0;
+		int i_n2 = 0;
+		
+		// Go from right to left in num1
+		for (int i=len1-1; i>=0; i--)
+		{
+			int carry = 0;
+			int n1 = num1[i] - '0';
+	
+			// To shift position to left after every
+			// multiplication of a digit in num2
+			i_n2 = 0;
+			
+			// Go from right to left in num2            
+			for (int j=len2-1; j>=0; j--)
+			{
+				// Take current digit of second number
+				int n2 = num2[j] - '0';
+	
+				// Multiply with current digit of first number
+				// and add result to previously stored result
+				// at current position.
+				int sum = n1*n2 + result[i_n1 + i_n2] + carry;
+	
+				// Carry for next iteration
+				carry = sum/10;
+	
+				// Store result
+				result[i_n1 + i_n2] = sum % 10;
+	
+				i_n2++;
+			}
+	
+			// store carry in next cell
+			if (carry > 0)
+				result[i_n1 + i_n2] += carry;
+	
+			// To shift position to left after every
+			// multiplication of a digit in num1.
+			i_n1++;
+		}
+	
+		// ignore '0's from the right
+		int i = result.size() - 1;
+		while (i>=0 && result[i] == 0)
+		i--;
+	
+		// If all were '0's - means either both or
+		// one of num1 or num2 were '0'
+		if (i == -1)
+		return "0";
+	
+		// generate the result string
+		std::string s = "";
+		
+		while (i >= 0)
+			s += std::to_string(result[i--]);
+	
+		return s;
+	}
 	static void pad(std::string& a, std::string& b) {
 		if(a.size() < b.size()) {
 			a.insert(0, b.size() - a.size(), '0');
@@ -178,9 +389,9 @@ private:
 	
 		// reverse resultant string
 		std::reverse(str.begin(), str.end());
-	
 		return str;
 	}
+	
 	std::string _data;
 	bool _isPositive;
 };
